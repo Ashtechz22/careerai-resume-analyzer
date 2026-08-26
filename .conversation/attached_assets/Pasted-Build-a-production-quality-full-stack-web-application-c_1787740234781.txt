@@ -1,0 +1,560 @@
+Build a production-quality full-stack web application called "CareerAI – AI Resume Analyzer & Job Matcher".
+
+IMPORTANT:
+- This is an internship portfolio project for a 3rd-year B.Tech CSE student.
+- Do NOT create a fake/demo-only application.
+- Build the application with clean, modular, understandable code.
+- I want to understand and modify the code later, so avoid unnecessary complexity.
+- Do not repeatedly rewrite working code.
+- Before making major architectural changes, inspect the existing project.
+- Make the application responsive and professional.
+
+==================================================
+1. TECH STACK
+==================================================
+
+Frontend:
+- React
+- TypeScript
+- Tailwind CSS
+- Modern responsive dashboard UI
+
+Backend:
+- Python
+- FastAPI
+- REST API architecture
+
+Database:
+- PostgreSQL
+
+AI:
+- Use an LLM API through an environment variable.
+- Do NOT hardcode API keys.
+- Create a clean AI service layer so the provider/model can be changed later.
+
+Resume processing:
+- PDF text extraction
+- DOCX text extraction
+
+Use environment variables through .env for:
+- DATABASE_URL
+- AI_API_KEY
+- Any other required secrets
+
+==================================================
+2. CORE USER FLOW
+==================================================
+
+The user should be able to:
+
+1. Create an account / log in.
+2. Upload a resume in PDF or DOCX format.
+3. The system extracts the resume text.
+4. AI analyzes the resume.
+5. Display:
+   - Overall Resume Score
+   - ATS Score
+   - Extracted skills
+   - Education
+   - Experience
+   - Projects
+   - Certifications
+   - Strengths
+   - Weaknesses
+   - Improvement suggestions
+6. User can paste a job description.
+7. System compares the resume against the job description.
+8. Display:
+   - Job Match Score
+   - Matching skills
+   - Missing skills
+   - Partially matching skills
+   - Relevant experience
+   - Missing keywords
+   - Personalized recommendations
+9. Store analysis history.
+10. Allow the user to view previous analyses.
+
+==================================================
+3. DASHBOARD
+==================================================
+
+Create a professional dashboard.
+
+Sidebar:
+- Dashboard
+- My Resume
+- Resume Analysis
+- Job Matcher
+- Analysis History
+- Profile
+- Settings
+
+Dashboard cards:
+- Resume Score
+- ATS Score
+- Latest Job Match
+- Skills Found
+- Skills Missing
+
+Include charts/visualizations where useful.
+
+The UI should look like a modern SaaS product rather than a college project.
+
+Use:
+- Cards
+- Progress indicators
+- Skill badges
+- Score circles
+- Tables
+- Clean typography
+- Responsive layout
+- Empty states
+- Loading states
+- Error states
+
+==================================================
+4. RESUME ANALYSIS
+==================================================
+
+When a resume is uploaded:
+
+Extract structured information:
+
+{
+  name,
+  email,
+  phone,
+  location,
+  education,
+  experience,
+  projects,
+  skills,
+  certifications,
+  achievements
+}
+
+Also analyze:
+
+- Resume structure
+- Keyword usage
+- Skill relevance
+- Project quality
+- Experience quality
+- Quantifiable achievements
+- Formatting problems
+- Missing sections
+
+Return a structured JSON response from the AI rather than unstructured text.
+
+Create validation so malformed AI responses do not crash the application.
+
+==================================================
+5. ATS SCORE
+==================================================
+
+Create a transparent scoring system.
+
+Example:
+
+ATS Score =
+- Skills relevance: 30%
+- Keywords: 20%
+- Experience: 20%
+- Projects: 15%
+- Education: 10%
+- Resume completeness: 5%
+
+Show the individual components on the dashboard.
+
+IMPORTANT:
+Do not claim that this score is identical to any real company's ATS.
+Clearly label it as an estimated ATS-style score.
+
+==================================================
+6. JOB MATCHING
+==================================================
+
+User enters:
+
+Job title
+Company (optional)
+Job description
+
+Compare:
+
+Resume ↔️ Job Description
+
+Calculate:
+
+- Overall match percentage
+- Skill match
+- Experience match
+- Education match
+- Keyword match
+- Project relevance
+
+Categorize skills:
+
+MATCHED
+PARTIAL
+MISSING
+
+Example:
+
+Python       MATCHED
+React        MATCHED
+PostgreSQL   PARTIAL
+Docker       MISSING
+AWS          MISSING
+
+Explain why each skill was classified that way.
+
+==================================================
+7. SEMANTIC MATCHING
+==================================================
+
+Do NOT rely only on exact keyword matching.
+
+Implement a basic semantic matching architecture using embeddings where practical.
+
+For example:
+
+"Machine Learning"
+and
+"ML"
+
+should be recognized as related.
+
+Create a matching service that can later be upgraded to a vector database.
+
+Keep the implementation understandable.
+
+==================================================
+8. AI RECOMMENDATIONS
+==================================================
+
+After job matching, generate personalized recommendations.
+
+Example:
+
+Priority 1:
+Docker
+Reason: Required by the job description and absent from resume.
+
+Priority 2:
+AWS
+Reason: Frequently mentioned in the target role.
+
+Priority 3:
+PostgreSQL
+Reason: Resume contains SQL experience but does not demonstrate PostgreSQL.
+
+Also generate:
+
+- What to learn
+- Suggested project
+- Suggested resume improvement
+- Suggested interview preparation
+
+==================================================
+9. RESUME IMPROVEMENT
+==================================================
+
+Allow the user to select a resume bullet point and ask AI to improve it.
+
+Example:
+
+Original:
+"Made a website using React."
+
+Improved:
+"Developed a responsive React web application using reusable components and REST API integration."
+
+The AI must NOT invent achievements, numbers, companies, technologies, or experience that the user did not provide.
+
+==================================================
+10. JOB RECOMMENDATIONS
+==================================================
+
+Based on the uploaded resume, recommend suitable job roles.
+
+Example:
+
+Python Developer       87%
+Backend Developer      82%
+ML Engineer            76%
+Data Analyst           71%
+Frontend Developer     65%
+
+Explain the reason behind each score.
+
+Do not scrape websites initially.
+Use the resume and user-provided job descriptions.
+
+==================================================
+11. DATABASE
+==================================================
+
+Create appropriate PostgreSQL tables/models for:
+
+Users
+Resumes
+ResumeAnalyses
+JobDescriptions
+JobMatches
+Skills
+AnalysisHistory
+
+Use proper relationships.
+
+Do not store raw sensitive resume information unnecessarily.
+
+==================================================
+12. SECURITY
+==================================================
+
+Implement:
+
+- Secure authentication
+- Password hashing
+- Protected API routes
+- Input validation
+- File type validation
+- File size limits
+- Environment variables for secrets
+- Proper error handling
+
+Never expose API keys to the frontend.
+
+==================================================
+13. API STRUCTURE
+==================================================
+
+Create clean FastAPI routes such as:
+
+POST /api/auth/register
+POST /api/auth/login
+
+POST /api/resumes/upload
+GET /api/resumes
+GET /api/resumes/{id}
+
+POST /api/resumes/{id}/analyze
+
+POST /api/jobs/match
+
+GET /api/analysis/history
+
+POST /api/resume/improve-bullet
+
+GET /api/dashboard
+
+Use clear request/response schemas.
+
+==================================================
+14. ERROR HANDLING
+==================================================
+
+Handle:
+
+- Invalid file
+- Unsupported file format
+- Empty resume
+- Very large resume
+- AI API failure
+- Invalid AI response
+- Database failure
+- Authentication failure
+- Network failure
+
+Show useful user-friendly error messages.
+
+Do not display stack traces to normal users.
+
+==================================================
+15. DEMO DATA
+==================================================
+
+Create an optional sample resume/job description for development/testing.
+
+Clearly label demo data.
+
+Do not mix demo data with real user data.
+
+==================================================
+16. TESTING
+==================================================
+
+Create basic tests for:
+
+- Resume parsing
+- Skill extraction
+- ATS calculation
+- Job matching
+- Authentication
+- API validation
+
+Include a small test dataset.
+
+==================================================
+17. DOCUMENTATION
+==================================================
+
+Create a detailed README.md containing:
+
+- Project overview
+- Features
+- Architecture
+- Tech stack
+- Folder structure
+- Installation
+- Environment variables
+- Database setup
+- Running locally
+- API documentation
+- AI architecture
+- ATS scoring methodology
+- Job matching methodology
+- Testing
+- Deployment instructions
+- Future improvements
+
+Also include an architecture diagram in the README using Mermaid.
+
+==================================================
+18. CODE QUALITY
+==================================================
+
+Use:
+
+- Modular architecture
+- Reusable components
+- TypeScript types
+- Pydantic models
+- Service layers
+- Clear naming
+- Comments only where useful
+- No duplicated code
+- No hardcoded secrets
+- No unnecessary libraries
+
+Keep frontend and backend logically separated.
+
+==================================================
+19. IMPORTANT AI IMPLEMENTATION RULE
+==================================================
+
+The AI should return structured JSON.
+
+Example:
+
+{
+  "overall_score": 82,
+  "ats_score": 78,
+  "skills": [],
+  "education": [],
+  "experience": [],
+  "projects": [],
+  "strengths": [],
+  "weaknesses": [],
+  "recommendations": []
+}
+
+Validate the response before saving it to PostgreSQL.
+
+If AI returns invalid JSON, handle it gracefully.
+
+==================================================
+20. DESIGN
+==================================================
+
+Application name:
+
+CareerAI
+
+Tagline:
+
+"Understand your resume. Match your next opportunity."
+
+Create a polished landing page with:
+
+- Hero section
+- Upload resume CTA
+- Job matching CTA
+- Feature section
+- How it works
+- Example analysis
+- FAQ
+- Footer
+
+Dashboard should feel like a real SaaS product.
+
+Do NOT use excessive animations.
+
+Focus on usability and performance.
+
+==================================================
+21. DEVELOPMENT APPROACH
+==================================================
+
+IMPORTANT:
+
+First inspect the existing Replit project.
+
+If there is no existing project, initialize the complete project.
+
+Build the application in logical stages:
+
+Stage 1:
+Project architecture + database + authentication
+
+Stage 2:
+Resume upload + PDF/DOCX extraction
+
+Stage 3:
+AI resume analysis
+
+Stage 4:
+ATS scoring
+
+Stage 5:
+Job description matching
+
+Stage 6:
+Dashboard and analysis history
+
+Stage 7:
+Resume improvement assistant
+
+Stage 8:
+Testing + error handling + documentation
+
+After each stage:
+- Run the application
+- Check for errors
+- Fix errors
+- Do not break previously working functionality
+
+==================================================
+22. FINAL REQUIREMENT
+==================================================
+
+The final application must be genuinely usable.
+
+A user should be able to:
+
+Register
+→ Upload resume
+→ Analyze resume
+→ See ATS-style score
+→ Enter a job description
+→ Get job match score
+→ See matched/missing skills
+→ Receive personalized recommendations
+→ Improve resume bullets
+→ View previous analyses
+
+Make this an internship-quality portfolio project that I can put on GitHub and demonstrate during placement interviews.
+
+Before finishing, verify that the frontend, backend, database, AI integration, authentication, and main user flow work together.

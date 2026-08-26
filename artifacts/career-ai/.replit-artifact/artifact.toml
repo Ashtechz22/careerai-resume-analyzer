@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "CareerAI"
+description = "A production-quality resume analyzer and job matching workspace that helps candidates understand their resume, estimate ATS readiness, compare opportunities, and improve their application materials."
+version = "1.0.0"
+id = "artifacts/career-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25910
+
+[services.development]
+run = "pnpm --filter @workspace/career-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/career-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/career-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25910"
+BASE_PATH = "/"
