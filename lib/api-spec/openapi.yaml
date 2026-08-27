@@ -3,20 +3,31 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CareerAI resume analysis and job matching API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Dashboard summaries
+  - name: resumes
+    description: Resume upload and analysis
+  - name: jobs
+    description: Job matching
+  - name: history
+    description: Analysis history
+  - name: assistant
+    description: Resume writing assistant
+  - name: storage
+    description: Secure object storage uploads
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +35,572 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard overview
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /resumes:
+    get:
+      operationId: listResumes
+      tags: [resumes]
+      summary: List the current user's resumes
+      responses:
+        "200":
+          description: Resume list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resume"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createResume
+      tags: [resumes]
+      summary: Save resume upload metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResumeInput"
+      responses:
+        "201":
+          description: Resume created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resume"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /resumes/{id}:
+    get:
+      operationId: getResume
+      tags: [resumes]
+      summary: Get one resume
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Resume details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /resumes/{id}/analyze:
+    post:
+      operationId: analyzeResume
+      tags: [resumes]
+      summary: Analyze a resume with the configured AI service
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Resume analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeAnalysis"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /jobs/match:
+    post:
+      operationId: matchJob
+      tags: [jobs]
+      summary: Compare a resume against a job description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobMatchInput"
+      responses:
+        "201":
+          description: Job match result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobMatch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /analysis/history:
+    get:
+      operationId: listAnalysisHistory
+      tags: [history]
+      summary: List previous resume and job analyses
+      responses:
+        "200":
+          description: Analysis history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /resume/improve-bullet:
+    post:
+      operationId: improveResumeBullet
+      tags: [assistant]
+      summary: Improve a resume bullet without inventing facts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulletImprovementInput"
+      responses:
+        "200":
+          description: Improved bullet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulletImprovement"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /job-recommendations:
+    get:
+      operationId: listJobRecommendations
+      tags: [jobs]
+      summary: Recommend roles based on the current resume
+      responses:
+        "200":
+          description: Recommended job roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobRecommendation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Get a presigned URL for a private resume upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadRequest"
+      responses:
+        "200":
+          description: Presigned upload destination
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
-
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    Dashboard:
+      type: object
+      required: [resumeScore, atsScore, latestJobMatch, skillsFound, skillsMissing, resumesAnalyzed, recentActivity]
+      properties:
+        resumeScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        atsScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        latestJobMatch:
+          type: ["integer", "null"]
+          minimum: 0
+          maximum: 100
+        skillsFound:
+          type: integer
+          minimum: 0
+        skillsMissing:
+          type: integer
+          minimum: 0
+        resumesAnalyzed:
+          type: integer
+          minimum: 0
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryItem"
+    ResumeInput:
+      type: object
+      required: [fileName, fileType, objectPath]
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        fileType:
+          type: string
+          enum: [application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document]
+        objectPath:
+          type: string
+          minLength: 1
+          maxLength: 500
+        extractedText:
+          type: ["string", "null"]
+          maxLength: 100000
+    Resume:
+      type: object
+      required: [id, fileName, fileType, status, createdAt]
+      properties:
+        id:
+          type: integer
+        fileName:
+          type: string
+        fileType:
+          type: string
+        status:
+          type: string
+          enum: [uploaded, analyzing, analyzed, failed]
+        overallScore:
+          type: ["integer", "null"]
+        atsScore:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    ResumeDetail:
+      allOf:
+        - $ref: "#/components/schemas/Resume"
+        - type: object
+          required: [analysis]
+          properties:
+            analysis:
+              anyOf:
+                - $ref: "#/components/schemas/ResumeAnalysis"
+                - type: "null"
+    ResumeAnalysis:
+      type: object
+      required: [id, resumeId, overallScore, atsScore, atsBreakdown, contact, education, experience, projects, certifications, skills, strengths, weaknesses, suggestions, createdAt]
+      properties:
+        id:
+          type: integer
+        resumeId:
+          type: integer
+        overallScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        atsScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        atsBreakdown:
+          $ref: "#/components/schemas/AtsBreakdown"
+        contact:
+          $ref: "#/components/schemas/Contact"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineItem"
+        experience:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineItem"
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        certifications:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Suggestion"
+        createdAt:
+          type: string
+          format: date-time
+    AtsBreakdown:
+      type: object
+      required: [skillsRelevance, keywords, experience, projects, education, completeness]
+      properties:
+        skillsRelevance:
+          type: integer
+        keywords:
+          type: integer
+        experience:
+          type: integer
+        projects:
+          type: integer
+        education:
+          type: integer
+        completeness:
+          type: integer
+    Contact:
+      type: object
+      required: [name, email, phone, location]
+      properties:
+        name:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+    TimelineItem:
+      type: object
+      required: [title, organization, period, description]
+      properties:
+        title:
+          type: string
+        organization:
+          type: string
+        period:
+          type: string
+        description:
+          type: string
+    Project:
+      type: object
+      required: [name, description, technologies]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        technologies:
+          type: array
+          items:
+            type: string
+    Suggestion:
+      type: object
+      required: [priority, title, detail]
+      properties:
+        priority:
+          type: integer
+        title:
+          type: string
+        detail:
+          type: string
+    JobMatchInput:
+      type: object
+      required: [resumeId, title, description]
+      properties:
+        resumeId:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        company:
+          type: ["string", "null"]
+          maxLength: 200
+        description:
+          type: string
+          minLength: 30
+          maxLength: 30000
+    JobMatch:
+      type: object
+      required: [id, title, company, score, skillMatch, experienceMatch, educationMatch, keywordMatch, projectRelevance, skills, missingKeywords, recommendations, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        company:
+          type: ["string", "null"]
+        score:
+          type: integer
+        skillMatch:
+          type: integer
+        experienceMatch:
+          type: integer
+        educationMatch:
+          type: integer
+        keywordMatch:
+          type: integer
+        projectRelevance:
+          type: integer
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillMatch"
+        missingKeywords:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Suggestion"
+        createdAt:
+          type: string
+          format: date-time
+    SkillMatch:
+      type: object
+      required: [name, status, reason]
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [matched, partial, missing]
+        reason:
+          type: string
+    HistoryItem:
+      type: object
+      required: [id, type, title, score, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [resume, job]
+        title:
+          type: string
+        score:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    BulletImprovementInput:
+      type: object
+      required: [bullet]
+      properties:
+        bullet:
+          type: string
+          minLength: 5
+          maxLength: 1000
+        context:
+          type: ["string", "null"]
+          maxLength: 2000
+    BulletImprovement:
+      type: object
+      required: [original, improved, notes]
+      properties:
+        original:
+          type: string
+        improved:
+          type: string
+        notes:
+          type: array
+          items:
+            type: string
+    JobRecommendation:
+      type: object
+      required: [role, score, reason]
+      properties:
+        role:
+          type: string
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        reason:
+          type: string
+    UploadRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        size:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        contentType:
+          type: string
+          enum: [application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document]
+    UploadResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string

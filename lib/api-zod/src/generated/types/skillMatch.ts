@@ -5,7 +5,10 @@
  * CareerAI resume analysis and job matching API
  * OpenAPI spec version: 0.1.0
  */
+import type { SkillMatchStatus } from './skillMatchStatus';
 
-export interface HealthStatus {
-  status: string;
+export interface SkillMatch {
+  name: string;
+  status: SkillMatchStatus;
+  reason: string;
 }
