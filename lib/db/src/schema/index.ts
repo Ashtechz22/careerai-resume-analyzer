@@ -21,3 +21,4 @@ export * from "./users";
 export * from "./resumes";
 export * from "./jobs";
 export * from "./history";
+export * from "./relations";

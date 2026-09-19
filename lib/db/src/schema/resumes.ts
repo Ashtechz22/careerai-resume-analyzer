@@ -1,18 +1,22 @@
-import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
 
-export const resumesTable = pgTable("career_resumes", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
-  fileName: text("file_name").notNull(),
-  fileType: text("file_type").notNull(),
-  objectPath: text("object_path").notNull(),
-  extractedText: text("extracted_text"),
-  status: text("status").notNull().default("uploaded"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+export const resumesTable = pgTable(
+  "career_resumes",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    fileType: text("file_type").notNull(),
+    objectPath: text("object_path").notNull(),
+    extractedText: text("extracted_text"),
+    status: text("status").notNull().default("uploaded"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (table) => [index("career_resumes_user_id_idx").on(table.userId)],
+);
 
 export const insertResumeSchema = z.object({
   userId: z.number().int(),
@@ -38,14 +42,18 @@ export type ResumeAnalysisJson = {
   atsBreakdown: { skillsRelevance: number; keywords: number; experience: number; projects: number; education: number; completeness: number };
 };
 
-export const resumeAnalysesTable = pgTable("career_resume_analyses", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  resumeId: integer("resume_id").notNull().references(() => resumesTable.id, { onDelete: "cascade" }),
-  overallScore: integer("overall_score").notNull(),
-  atsScore: integer("ats_score").notNull(),
-  analysis: jsonb("analysis").$type<ResumeAnalysisJson>().notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const resumeAnalysesTable = pgTable(
+  "career_resume_analyses",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    resumeId: integer("resume_id").notNull().references(() => resumesTable.id, { onDelete: "cascade" }),
+    overallScore: integer("overall_score").notNull(),
+    atsScore: integer("ats_score").notNull(),
+    analysis: jsonb("analysis").$type<ResumeAnalysisJson>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("career_resume_analyses_resume_id_idx").on(table.resumeId)],
+);
 
 export const insertResumeAnalysisSchema = z.object({
   resumeId: z.number().int(),

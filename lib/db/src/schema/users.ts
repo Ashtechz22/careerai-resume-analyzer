@@ -1,4 +1,4 @@
-import { pgTable, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 
 export const usersTable = pgTable("career_users", {

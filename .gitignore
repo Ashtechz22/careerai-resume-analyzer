@@ -47,3 +47,18 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+.env
+.env.*
+lib/db/.env
+artifacts/career-ai/.env
+
+# Local uploads and development backups
+artifacts/api-server/uploads/
+backups/
+
+# Local logs and temporary files
+build-error.txt
+pnpm-error.log
+,x
+lib/db/.envc

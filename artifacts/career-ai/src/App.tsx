@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { ClerkProvider, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
+import { setAuthTokenGetter } from '@workspace/api-client-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -64,7 +65,8 @@ function AuthLoading() {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  setAuthTokenGetter(getToken);
   const [, setLocation] = useLocation();
 
   if (!isLoaded) return <AuthLoading />;

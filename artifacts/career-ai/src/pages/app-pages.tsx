@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { Link, useLocation, useParams } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -124,6 +125,7 @@ function TimelinePanel({ title, items }: { title: string; items: { title: string
 }
 
 export function AnalyzePage() {
+  const { getToken } = useAuth();
   const resumesQuery = useListResumes();
   const requestUpload = useRequestUploadUrl();
   const createResume = useCreateResume();
@@ -140,7 +142,20 @@ export function AnalyzePage() {
     try {
       const contentType = (file.type === 'application/pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') as ResumeInputFileType;
       const upload = await requestUpload.mutateAsync({ data: { name: file.name, size: file.size, contentType } });
-      await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+      const token = await getToken();
+
+     const response = await fetch(upload.uploadURL, {
+       method: 'PUT',
+       headers: {
+         'Content-Type': file.type,
+         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+       },
+       body: file,
+ });
+
+if (!response.ok) {
+  throw new Error(`Upload failed: ${response.status}`);
+}
       const resume = await createResume.mutateAsync({ data: { fileName: file.name, fileType: contentType, objectPath: upload.objectPath } });
       setSelected(resume.id); setFileName(file.name); setUploading(false); setStage('analyzing'); analyze.mutate({ id: resume.id }, { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListResumesQueryKey() }); queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() }); setLocation(`/resumes/${resume.id}`); }, onError: () => { setError('The file uploaded, but analysis could not finish. Try again from your resume library.'); setUploading(false); } });
     } catch { setError('Upload did not complete. Check the file type and size, then try again.'); setUploading(false); }
