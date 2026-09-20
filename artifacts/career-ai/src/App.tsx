@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { ClerkProvider, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
-import { setAuthTokenGetter } from '@workspace/api-client-react';
+import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -27,6 +27,8 @@ import {
 } from 'wouter';
 
 const queryClient = new QueryClient();
+
+setBaseUrl(import.meta.env.VITE_API_URL);
 
 function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const Component = mode === 'sign-in' ? SignIn : SignUp;
