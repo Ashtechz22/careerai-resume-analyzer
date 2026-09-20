@@ -160,14 +160,63 @@ export async function matchResumeToJob(resumeText: string, jobText: string): Pro
 }
 
 export async function improveBullet(bullet: string, context: string | null) {
+  const cleanBullet = bullet.replace(/^[-•]\s*/, "").trim();
+  const cleanContext = context?.trim() || "";
+
   const fallback = {
     original: bullet,
-    improved: bullet.replace(/^[-•]\s*/, "").replace(/\bworked on\b/i, "Contributed to").replace(/\bhelped\b/i, "Supported"),
-    notes: ["Uses a stronger opening verb without changing the underlying claim.", "Add a result or scope only if you can verify it."],
+    improved: cleanBullet,
+    notes: [
+      "Rewrite the bullet with a stronger action verb while preserving the original facts.",
+      "Add measurable results or scope only when they are explicitly provided.",
+    ],
   };
-  const model = await askModel(`Improve this resume bullet without adding facts. Return JSON with original, improved, and notes array. Bullet: ${bullet}\\nContext: ${context ?? "None provided"}`);
+
+  const prompt = `You are an expert technical resume writer.
+
+Rewrite the resume bullet below so it is concise, specific, professional, and ATS-friendly.
+
+IMPORTANT RULES:
+1. Preserve every factual claim from the original bullet.
+2. You MAY use factual details from the provided context.
+3. NEVER invent metrics, percentages, users, revenue, performance improvements, responsibilities, technologies, or achievements.
+4. Do not merely replace one word. Substantially improve the sentence structure when possible.
+5. Start with a strong action verb such as Developed, Built, Implemented, Designed, Automated, Optimized, Analyzed, Engineered, Created, or Improved when appropriate.
+6. Combine related details into one clear bullet.
+7. Remove vague filler such as "worked on", "some problems", "various things", or "helped" when the context provides more specific information.
+8. Keep the improved bullet to 1-2 sentences and preferably under 35 words.
+9. If the context contains technologies, tools, responsibilities, or outcomes, use them when relevant.
+10. Do not add information that is not supported by the bullet or context.
+11. Return ONLY valid JSON with exactly these fields:
+{
+  "original": "original bullet",
+  "improved": "rewritten bullet",
+  "notes": ["short explanation of improvement 1", "short explanation of improvement 2"]
+}
+
+Original bullet:
+${cleanBullet}
+
+Helpful context:
+${cleanContext || "No additional context was provided."}`;
+
+  const model = await askModel(prompt);
+
   if (!model || typeof model !== "object") return fallback;
-  return { ...fallback, ...(model as Partial<typeof fallback>), original: bullet };
+
+  const result = model as Partial<typeof fallback>;
+
+  return {
+    original: bullet,
+    improved:
+      typeof result.improved === "string" && result.improved.trim()
+        ? result.improved.trim()
+        : fallback.improved,
+    notes:
+      Array.isArray(result.notes) && result.notes.length
+        ? result.notes
+        : fallback.notes,
+  };
 }
 
 export function recommendationsFromAnalysis(analysis: ResumeAnalysisJson) {
