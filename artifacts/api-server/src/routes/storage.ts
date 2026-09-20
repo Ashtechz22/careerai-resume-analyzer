@@ -37,7 +37,7 @@ router.post(
       const relativeUploadURL = await objectStorageService.getObjectEntityUploadURL();
       const uploadURL = new URL(
         relativeUploadURL,
-        `${req.protocol}://${req.get("host")}`,
+        `https://${req.get("host")}`,
       ).toString();
 
       const objectPath =
