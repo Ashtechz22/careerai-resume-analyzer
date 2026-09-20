@@ -143,12 +143,101 @@ async function askModel(prompt: string): Promise<unknown | null> {
 
 export async function analyzeResume(text: string): Promise<ResumeAnalysisJson> {
   const fallback = localResumeAnalysis(text);
-  const model = await askModel(`Analyze this resume and return an object with contact, education, experience, projects, certifications, skills, strengths, weaknesses, suggestions, and atsBreakdown. Every suggestion needs priority, title, and detail. Keep atsBreakdown values 0-100. Resume:\\n${text.slice(0, 100000)}`);
-  if (!model || typeof model !== "object") return fallback;
+
+  const model = await askModel(
+    `Analyze this resume and return an object with contact, education, experience, projects, certifications, skills, strengths, weaknesses, suggestions, and atsBreakdown. Every suggestion needs priority, title, and detail. Keep atsBreakdown values 0-100. Resume:\n${text.slice(0, 100000)}`
+  );
+
+  if (!model || typeof model !== "object") {
+    return fallback;
+  }
+
+  const candidate = model as Partial<ResumeAnalysisJson>;
+
   return {
     ...fallback,
-    ...(model as Partial<ResumeAnalysisJson>),
-    atsBreakdown: { ...fallback.atsBreakdown, ...((model as Partial<ResumeAnalysisJson>).atsBreakdown ?? {}) },
+
+    contact:
+      candidate.contact &&
+      typeof candidate.contact === "object"
+        ? {
+            name: typeof candidate.contact.name === "string" ? candidate.contact.name : fallback.contact.name,
+            email: typeof candidate.contact.email === "string" ? candidate.contact.email : fallback.contact.email,
+            phone: typeof candidate.contact.phone === "string" ? candidate.contact.phone : fallback.contact.phone,
+            location:
+              typeof candidate.contact.location === "string"
+                ? candidate.contact.location
+                : fallback.contact.location,
+          }
+        : fallback.contact,
+
+    education: Array.isArray(candidate.education)
+      ? candidate.education
+      : fallback.education,
+
+    experience: Array.isArray(candidate.experience)
+      ? candidate.experience
+      : fallback.experience,
+
+    projects: Array.isArray(candidate.projects)
+      ? candidate.projects
+      : fallback.projects,
+
+    certifications: Array.isArray(candidate.certifications)
+      ? candidate.certifications
+      : fallback.certifications,
+
+    skills: Array.isArray(candidate.skills)
+      ? candidate.skills
+      : fallback.skills,
+
+    strengths: Array.isArray(candidate.strengths)
+      ? candidate.strengths
+      : fallback.strengths,
+
+    weaknesses: Array.isArray(candidate.weaknesses)
+      ? candidate.weaknesses
+      : fallback.weaknesses,
+
+    suggestions: Array.isArray(candidate.suggestions)
+      ? candidate.suggestions
+      : fallback.suggestions,
+
+    atsBreakdown:
+      candidate.atsBreakdown &&
+      typeof candidate.atsBreakdown === "object"
+        ? {
+            skillsRelevance:
+              typeof candidate.atsBreakdown.skillsRelevance === "number"
+                ? candidate.atsBreakdown.skillsRelevance
+                : fallback.atsBreakdown.skillsRelevance,
+
+            keywords:
+              typeof candidate.atsBreakdown.keywords === "number"
+                ? candidate.atsBreakdown.keywords
+                : fallback.atsBreakdown.keywords,
+
+            experience:
+              typeof candidate.atsBreakdown.experience === "number"
+                ? candidate.atsBreakdown.experience
+                : fallback.atsBreakdown.experience,
+
+            projects:
+              typeof candidate.atsBreakdown.projects === "number"
+                ? candidate.atsBreakdown.projects
+                : fallback.atsBreakdown.projects,
+
+            education:
+              typeof candidate.atsBreakdown.education === "number"
+                ? candidate.atsBreakdown.education
+                : fallback.atsBreakdown.education,
+
+            completeness:
+              typeof candidate.atsBreakdown.completeness === "number"
+                ? candidate.atsBreakdown.completeness
+                : fallback.atsBreakdown.completeness,
+          }
+        : fallback.atsBreakdown,
   };
 }
 
