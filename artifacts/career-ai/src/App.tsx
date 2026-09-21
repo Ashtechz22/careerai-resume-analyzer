@@ -86,7 +86,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={LandingPage} />
-        <Route path="/sign-in/*">
+        <Route path="/sign-in/*?">
           <AuthPage mode="sign-in" />
         </Route>
         <Route path="/sign-up">
