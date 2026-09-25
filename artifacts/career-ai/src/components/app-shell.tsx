@@ -1,3 +1,4 @@
+import { useUser } from '@clerk/clerk-react';
 import { type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
@@ -43,7 +44,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   const pageName = navItems.find((item) => location.startsWith(item.href))?.label ?? 'Workspace';
-  return (
+  
+  const { user } = useUser();
+  const name = user?.fullName || user?.firstName || user?.username || "User";
+  const initials = name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+
+return (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-[244px] flex-col bg-sidebar px-4 py-5 transition-transform duration-300 md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="mb-9 flex items-center justify-between px-2">
@@ -64,8 +70,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <NavLink href="/profile" label="Profile" icon={UserRound} onClick={() => setOpen(false)} />
           <NavLink href="/settings" label="Settings" icon={Settings} onClick={() => setOpen(false)} />
           <div className="mt-3 flex items-center gap-2.5 border-t border-sidebar-border px-3 pt-4">
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-accent text-[11px] font-extrabold text-accent-foreground">AR</div>
-            <div className="min-w-0"><div className="truncate text-[12px] font-bold text-sidebar-foreground">Alex Rivera</div><div className="truncate text-[10px] text-sidebar-foreground/45">Candidate workspace</div></div>
+            <div className="grid h-8 w-8 place-items-center rounded-full bg-accent text-[11px] font-extrabold text-accent-foreground">{initials}</div>
+            <div className="min-w-0"><div className="truncate text-[12px] font-bold text-sidebar-foreground">{name}</div><div className="truncate text-[10px] text-sidebar-foreground/45">Candidate workspace</div></div>
             <ArrowUpRight className="ml-auto h-3.5 w-3.5 text-sidebar-foreground/30" />
           </div>
         </div>
@@ -77,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="font-display text-[15px] font-bold tracking-[-.02em] md:hidden">{pageName}</div>
           <div className="ml-auto flex items-center gap-3">
             <Link href="/analyze" className="hidden items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[11px] font-bold text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5 sm:flex" data-testid="link-header-analyze"><Activity className="h-3.5 w-3.5" /> New analysis</Link>
-            <div className="grid h-8 w-8 place-items-center rounded-full border border-border bg-card text-[10px] font-extrabold text-primary" data-testid="avatar-user">AR</div>
+            <div className="grid h-8 w-8 place-items-center rounded-full border border-border bg-card text-[10px] font-extrabold text-primary" data-testid="avatar-user">{initials}</div>
           </div>
         </header>
         <div className="mx-auto max-w-[1440px] px-5 py-7 md:px-9 md:py-9">{children}</div>
