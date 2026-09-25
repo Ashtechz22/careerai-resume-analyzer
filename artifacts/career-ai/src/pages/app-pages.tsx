@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { Link, useLocation, useParams } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -154,7 +154,10 @@ export function AnalyzePage() {
       const upload = await requestUpload.mutateAsync({ data: { name: file.name, size: file.size, contentType } });
       const token = await getToken();
 
-     const response = await fetch(upload.uploadURL, {
+      console.log('UPLOAD DEBUG URL:', upload.uploadURL);
+      console.log('UPLOAD DEBUG TOKEN:', token ? 'TOKEN_PRESENT' : 'NO_TOKEN');
+
+      const response = await fetch(upload.uploadURL, {
        method: 'PUT',
        headers: {
          'Content-Type': file.type,
@@ -168,7 +171,15 @@ if (!response.ok) {
 }
       const resume = await createResume.mutateAsync({ data: { fileName: file.name, fileType: contentType, objectPath: upload.objectPath } });
       setSelected(resume.id); setFileName(file.name); setUploading(false); setStage('analyzing'); analyze.mutate({ id: resume.id }, { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListResumesQueryKey() }); queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() }); setLocation(`/resumes/${resume.id}`); }, onError: () => { setError('The file uploaded, but analysis could not finish. Try again from your resume library.'); setUploading(false); } });
-    } catch { setError('Upload did not complete. Check the file type and size, then try again.'); setUploading(false); }
+    } catch (error) {
+      console.error('RESUME UPLOAD ERROR:', error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Upload did not complete. Check the file type and size, then try again.'
+      );
+      setUploading(false);
+    }
   }
   function analyzeExisting() { if (!selected) return; setStage('analyzing'); analyze.mutate({ id: Number(selected) }, { onSuccess: () => setLocation(`/resumes/${selected}`), onError: () => { setError('Analysis could not finish. Please try again.'); setStage('choose'); } }); }
   const resumes = resumesQuery.data ?? [];
@@ -219,8 +230,283 @@ function RecommendationCard({ role, index }: { role: JobRecommendation; index: n
 }
 
 export function ProfilePage() {
-  return <AppShell><PageTitle eyebrow="Your profile" title="The person behind the resume" detail="Keep the context around your work close. It helps every signal make more sense." action={<button className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-xs font-bold hover:bg-muted" data-testid="button-edit-profile"><Pencil className="h-4 w-4" /> Edit profile</button>} /><div className="grid gap-5 lg:grid-cols-[.7fr_1.3fr]"><section className="rounded-2xl bg-sidebar p-6 text-sidebar-foreground"><div className="grid h-16 w-16 place-items-center rounded-2xl bg-accent text-xl font-extrabold text-accent-foreground">AR</div><h2 className="mt-5 font-display text-2xl font-bold">Alex Rivera</h2><p className="mt-1 text-xs text-sidebar-foreground/60">Product designer · Early career</p><div className="mt-7 space-y-3 border-t border-sidebar-border pt-5 text-xs text-sidebar-foreground/65"><div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-sidebar-primary" /> alex.rivera@example.com</div><div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-sidebar-primary" /> Brooklyn, NY</div></div></section><section className="rounded-2xl border border-border bg-card p-6"><h2 className="font-display text-lg font-bold">Career context</h2><p className="mt-1 text-xs text-muted-foreground">This information stays yours. Add only what helps you make better decisions.</p><div className="mt-6 grid gap-4 sm:grid-cols-2"><ProfileField label="Current direction" value="Product design" /><ProfileField label="Experience level" value="Early career" /><ProfileField label="Open to" value="Internships · New grad" /><ProfileField label="Location preference" value="New York · Remote" /></div><div className="mt-5 rounded-xl bg-muted/60 p-4"><div className="flex items-center gap-2 text-xs font-bold"><Lightbulb className="h-3.5 w-3.5 text-accent-foreground" /> A useful north star</div><p className="mt-2 text-xs leading-relaxed text-muted-foreground">You are building a portfolio of work where research becomes simple, useful product decisions.</p></div></section></div></AppShell>;
+  const { isLoaded, user } = useUser();
+
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!isLoaded) {
+    return (
+      <AppShell>
+        <PageTitle
+          eyebrow="Your profile"
+          title="The person behind the resume"
+          detail="Loading your profile..."
+        />
+      </AppShell>
+    );
+  }
+
+  if (!user) {
+    return (
+      <AppShell>
+        <ErrorState />
+      </AppShell>
+    );
+  }
+
+  const careerProfile =
+    (user.unsafeMetadata?.careerProfile as {
+      currentDirection?: string;
+      experienceLevel?: string;
+      openTo?: string;
+      locationPreference?: string;
+      careerNote?: string;
+    } | undefined) ?? {};
+
+  const name =
+    user.fullName ||
+    user.firstName ||
+    user.username ||
+    "User";
+
+  const email =
+    user.primaryEmailAddress?.emailAddress ||
+    user.emailAddresses?.[0]?.emailAddress ||
+    "Not set";
+
+  const initials = name
+    .split(" ")
+    .map((part: string) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const [form, setForm] = useState({
+    currentDirection: careerProfile.currentDirection ?? "",
+    experienceLevel: careerProfile.experienceLevel ?? "",
+    openTo: careerProfile.openTo ?? "",
+    locationPreference: careerProfile.locationPreference ?? "",
+    careerNote: careerProfile.careerNote ?? "",
+  });
+
+  async function saveProfile() {
+    if (!user) {
+      setError("User session is not available.");
+      return;
+    }
+    
+    setSaving(true);
+    setError("");
+
+    try {
+      await user.update({
+        unsafeMetadata: {
+          ...user.unsafeMetadata,
+          careerProfile: form,
+        },
+      });
+
+      setEditing(false);
+    } catch {
+      setError("Could not save your profile. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEditing() {
+    setForm({
+      currentDirection: careerProfile.currentDirection ?? "",
+      experienceLevel: careerProfile.experienceLevel ?? "",
+      openTo: careerProfile.openTo ?? "",
+      locationPreference: careerProfile.locationPreference ?? "",
+      careerNote: careerProfile.careerNote ?? "",
+    });
+
+    setError("");
+    setEditing(true);
+  }
+
+  return (
+    <AppShell>
+      <PageTitle
+        eyebrow="Your profile"
+        title="The person behind the resume"
+        detail="Keep the context around your work close. It helps every signal make more sense."
+        action={
+          editing ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditing(false)}
+                className="rounded-xl border border-border bg-card px-4 py-3 text-xs font-bold hover:bg-muted"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={saveProfile}
+                disabled={saving}
+                className="rounded-xl bg-primary px-4 py-3 text-xs font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save profile"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={startEditing}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-xs font-bold hover:bg-muted"
+              data-testid="button-edit-profile"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit profile
+            </button>
+          )
+        }
+      />
+
+      <div className="grid gap-5 lg:grid-cols-[.7fr_1.3fr]">
+        <section className="rounded-2xl bg-sidebar p-6 text-sidebar-foreground">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-accent text-xl font-extrabold text-accent-foreground">
+            {initials}
+          </div>
+
+          <h2 className="mt-5 font-display text-2xl font-bold">
+            {name}
+          </h2>
+
+          <p className="mt-1 text-xs text-sidebar-foreground/60">
+            {careerProfile.currentDirection || "Career profile"}
+          </p>
+
+          <div className="mt-7 space-y-3 border-t border-sidebar-border pt-5 text-xs text-sidebar-foreground/65">
+            <div className="flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5 text-sidebar-primary" />
+              {email}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-display text-lg font-bold">
+            Career context
+          </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            This information stays yours. Add only what helps you make better decisions.
+          </p>
+
+          {editing ? (
+            <div className="mt-6 space-y-4">
+              <input
+                value={form.currentDirection}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    currentDirection: e.target.value,
+                  })
+                }
+                placeholder="Current direction"
+                className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"
+              />
+
+              <input
+                value={form.experienceLevel}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    experienceLevel: e.target.value,
+                  })
+                }
+                placeholder="Experience level"
+                className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"
+              />
+
+              <input
+                value={form.openTo}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    openTo: e.target.value,
+                  })
+                }
+                placeholder="Open to"
+                className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"
+              />
+
+              <input
+                value={form.locationPreference}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    locationPreference: e.target.value,
+                  })
+                }
+                placeholder="Location preference"
+                className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"
+              />
+
+              <textarea
+                value={form.careerNote}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    careerNote: e.target.value,
+                  })
+                }
+                placeholder="Career note"
+                className="min-h-[120px] w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"
+              />
+
+              {error && (
+                <p className="text-sm text-destructive">
+                  {error}
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <ProfileField
+                  label="Current direction"
+                  value={careerProfile.currentDirection || "Not set"}
+                />
+
+                <ProfileField
+                  label="Experience level"
+                  value={careerProfile.experienceLevel || "Not set"}
+                />
+
+                <ProfileField
+                  label="Open to"
+                  value={careerProfile.openTo || "Not set"}
+                />
+
+                <ProfileField
+                  label="Location preference"
+                  value={careerProfile.locationPreference || "Not set"}
+                />
+              </div>
+
+              <div className="mt-5 rounded-xl bg-muted/60 p-4">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <Lightbulb className="h-3.5 w-3.5 text-accent-foreground" />
+                  Career note
+                </div>
+
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  {careerProfile.careerNote || "Not set"}
+                </p>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
+    </AppShell>
+  );
 }
+
 function ProfileField({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-border p-3.5"><div className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground">{label}</div><div className="mt-2 text-xs font-bold">{value}</div></div>; }
 
 export function SettingsPage() {

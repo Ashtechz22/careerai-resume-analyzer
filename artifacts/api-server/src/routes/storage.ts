@@ -35,9 +35,12 @@ router.post(
       const { name, size, contentType } = parsed.data;
 
       const relativeUploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const protocol =
+        process.env.NODE_ENV === "production" ? "https" : "http";
+
       const uploadURL = new URL(
         relativeUploadURL,
-        `https://${req.get("host")}`,
+        `${protocol}://${req.get("host")}`,
       ).toString();
 
       const objectPath =
