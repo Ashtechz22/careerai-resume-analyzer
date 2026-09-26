@@ -331,13 +331,13 @@ IMPORTANT RULES:
 1. Preserve every factual claim from the original bullet.
 2. You MAY use factual details from the provided context.
 3. NEVER invent metrics, percentages, users, revenue, performance improvements, responsibilities, technologies, or achievements.
-4. Do not merely replace one word. Substantially improve the sentence structure when possible.
-5. Start with a strong action verb such as Developed, Built, Implemented, Designed, Automated, Optimized, Analyzed, Engineered, Created, or Improved when appropriate.
-6. Combine related details into one clear bullet.
-7. Remove vague filler such as "worked on", "some problems", "various things", or "helped" when the context provides more specific information.
-8. Keep the improved bullet to 1-2 sentences and preferably under 35 words.
-9. If the context contains technologies, tools, responsibilities, or outcomes, use them when relevant.
-10. Do not add information that is not supported by the bullet or context.
+4. Rewrite the bullet substantially when the available facts allow it. The result should sound like a professional software-engineering resume bullet, not a simple paraphrase.
+5. Start with the strongest accurate action verb for the work, such as Engineered, Developed, Implemented, Built, Designed, Automated, Optimized, Analyzed, or Integrated.
+6. Structure the bullet around: strong action + what was built/done + relevant technical implementation + scope, purpose, or result when supported by the input.
+7. Replace vague wording such as "worked on", "helped", "various", or "responsible for" with precise language that describes the actual contribution.
+8. Keep the improved bullet to one strong resume bullet, preferably 20-35 words.
+9. Use concrete technologies, responsibilities, implementation details, project scope, and outcomes from the context whenever they are relevant. Do not omit useful factual details merely to keep the wording generic.
+10. Never invent numbers, percentages, users, revenue, performance improvements, scale, responsibilities, technologies, or outcomes. If an important result is not provided, describe the work itself rather than inventing an impact.
 11. Return ONLY valid JSON with exactly these fields:
 {
   "original": "original bullet",
