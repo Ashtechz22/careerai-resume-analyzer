@@ -23,7 +23,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
         <span className="absolute left-[15px] top-[8px] h-[16px] w-[4px] rotate-[34deg] rounded-full bg-primary-foreground" />
         <span className="absolute right-[8px] top-[8px] h-[4px] w-[10px] rounded-full bg-primary-foreground" />
       </span>
-      {!compact && <span className="font-display text-[17px] font-bold tracking-[-.03em] text-sidebar-foreground">career<span className="text-sidebar-primary">ai</span></span>}
+      {!compact && <span className="font-display text-[17px] font-bold tracking-[-.03em] text-foreground">career<span className="text-primary">ai</span></span>}
     </Link>
   );
 }
