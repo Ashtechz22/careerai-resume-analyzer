@@ -141,6 +141,56 @@ async function askModel(prompt: string): Promise<unknown | null> {
   try { return JSON.parse(content); } catch { return null; }
 }
 
+
+async function askGroqModel(prompt: string): Promise<unknown | null> {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) return null;
+
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: process.env.GROQ_MODEL ?? "openai/gpt-oss-20b",
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a careful resume writer. Return valid JSON only. Never invent achievements, metrics, employers, skills, or responsibilities.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(45_000),
+    },
+  );
+
+  if (!response.ok) return null;
+
+  const json = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+
+  const content = json.choices?.[0]?.message?.content;
+  if (!content) return null;
+
+  try {
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+
 export async function analyzeResume(text: string): Promise<ResumeAnalysisJson> {
   const fallback = localResumeAnalysis(text);
 
@@ -289,7 +339,7 @@ ${cleanBullet}
 Helpful context:
 ${cleanContext || "No additional context was provided."}`;
 
-  const model = await askModel(prompt);
+  const model = (await askModel(prompt)) ?? (await askGroqModel(prompt));
 
   if (!model || typeof model !== "object") return fallback;
 
