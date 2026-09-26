@@ -305,7 +305,43 @@ export async function analyzeResume(text: string): Promise<ResumeAnalysisJson> {
 
 export async function matchResumeToJob(resumeText: string, jobText: string): Promise<MatchResult> {
   const fallback = localMatch(resumeText, jobText);
-  const model = await askModel(`Compare this resume to this job description. Return JSON with dimensions (skillMatch, experienceMatch, educationMatch, keywordMatch, projectRelevance), skills (name, status matched|partial|missing, reason), missingKeywords, recommendations (priority, title, detail). Keep scores 0-100 and only use evidence in the resume. Resume:\\n${resumeText.slice(0, 70000)}\\nJob:\\n${jobText.slice(0, 30000)}`);
+  const prompt = `You are an expert resume-to-job matching analyst.
+
+Compare the resume to the job description and return valid JSON only.
+
+Rules:
+1. Score skillMatch, experienceMatch, educationMatch, keywordMatch, and projectRelevance from 0-100.
+2. Identify skills as matched, partial, or missing.
+3. Explain each skill status using evidence from the resume or job description.
+4. List the most important missing keywords.
+5. Give practical recommendations for improving the resume for this specific role.
+6. Never invent experience, skills, metrics, employers, education, or achievements.
+7. Prefer evidence from projects and technical work when evaluating project relevance.
+8. Return exactly:
+{
+  "skillMatch": 0,
+  "experienceMatch": 0,
+  "educationMatch": 0,
+  "keywordMatch": 0,
+  "projectRelevance": 0,
+  "skills": [
+    {"name": "skill", "status": "matched", "reason": "evidence"}
+  ],
+  "missingKeywords": ["keyword"],
+  "recommendations": [
+    {"priority": 1, "title": "title", "detail": "detail"}
+  ]
+}
+
+Resume:
+${resumeText.slice(0, 70000)}
+
+Job:
+${jobText.slice(0, 30000)}`;
+
+  const model =
+    (await askGroqModel(prompt)) ??
+    (await askModel(prompt));
   if (!model || typeof model !== "object") return fallback;
   return { ...fallback, ...(model as Partial<MatchResult>) };
 }
