@@ -15,7 +15,7 @@ const navItems = [
   { href: '/recommendations', label: 'Role signals', icon: BarChart3 },
 ];
 
-export function BrandMark({ compact = false }: { compact?: boolean }) {
+export function BrandMark({ compact = false, inSidebar = false }: { compact?: boolean; inSidebar?: boolean }) {
   return (
     <Link href="/dashboard" className="flex items-center gap-2.5 no-underline" data-testid="link-brand">
       <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-primary text-primary-foreground shadow-sm">
@@ -23,7 +23,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
         <span className="absolute left-[15px] top-[8px] h-[16px] w-[4px] rotate-[34deg] rounded-full bg-primary-foreground" />
         <span className="absolute right-[8px] top-[8px] h-[4px] w-[10px] rounded-full bg-primary-foreground" />
       </span>
-      {!compact && <span className="font-display text-[17px] font-bold tracking-[-.03em] text-foreground">career<span className="text-primary">ai</span></span>}
+      {!compact && <span className={`font-display text-[17px] font-bold tracking-[-.03em] ${inSidebar ? "text-sidebar-foreground" : "text-foreground"}`}>career<span className="text-primary">ai</span></span>}
     </Link>
   );
 }
@@ -53,7 +53,7 @@ return (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-[244px] flex-col bg-sidebar px-4 py-5 transition-transform duration-300 md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="mb-9 flex items-center justify-between px-2">
-          <BrandMark />
+          <BrandMark inSidebar />
           <button className="rounded-lg p-1.5 text-sidebar-foreground/50 hover:bg-sidebar-accent md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" data-testid="button-close-menu"><X className="h-5 w-5" /></button>
         </div>
         <div className="mb-3 px-3 font-mono text-[9px] font-medium uppercase tracking-[.18em] text-sidebar-foreground/35">Workspace</div>
