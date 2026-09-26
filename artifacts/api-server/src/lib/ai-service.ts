@@ -144,7 +144,13 @@ async function askModel(prompt: string): Promise<unknown | null> {
 
 async function askGroqModel(prompt: string): Promise<unknown | null> {
   const key = process.env.GROQ_API_KEY;
-  if (!key) return null;
+  if (!key) {
+    console.warn("[AI] GROQ_API_KEY is not set");
+    return null;
+  }
+
+  const model =
+    process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-20b";
 
   const response = await fetch(
     "https://api.groq.com/openai/v1/chat/completions",
@@ -155,7 +161,7 @@ async function askGroqModel(prompt: string): Promise<unknown | null> {
         Authorization: `Bearer ${key}`,
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL ?? "openai/gpt-oss-20b",
+        model,
         temperature: 0.3,
         response_format: { type: "json_object" },
         messages: [
@@ -174,7 +180,13 @@ async function askGroqModel(prompt: string): Promise<unknown | null> {
     },
   );
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.warn(
+      `[AI] Groq request failed (${response.status}): ${errorBody.slice(0, 500)}`
+    );
+    return null;
+  }
 
   const json = (await response.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
@@ -339,7 +351,9 @@ ${cleanBullet}
 Helpful context:
 ${cleanContext || "No additional context was provided."}`;
 
-  const model = (await askModel(prompt)) ?? (await askGroqModel(prompt));
+  const model =
+    (await askGroqModel(prompt)) ??
+    (await askModel(prompt));
 
   if (!model || typeof model !== "object") return fallback;
 
